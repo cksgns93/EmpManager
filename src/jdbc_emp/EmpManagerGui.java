@@ -6,20 +6,48 @@
 
 package jdbc_emp;
 
+import java.util.ArrayList;
+
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 public class EmpManagerGui extends javax.swing.JFrame {
 	
 	private DeptDAO deptDao;
 	private EmpDAO empDao;
-    /**
-     * Creates new form EmpManagerGui
-     */
+	private DefaultTableModel dmodel, emodel; //부서 테이블 모델, 사원 테이블 모델
+	String []colHeader1 = {"부서번호","부서명","부서위치"};
+	String []colHeader2 = {"사번","사원명","부서번호","부서명","담당업무","입사일"};
+    MyMouseEventHandler handler;
+    String dnames[];//부서번호 : 부서명 형태의 정보를 저장할 배열
+    DefaultComboBoxModel<String> comboModel;
+    
     public EmpManagerGui() {
     	super("::EmpManagerGui::");
         initComponents();
         deptDao = new DeptDAO();
         empDao = new EmpDAO();
+        tabPane.setSelectedIndex(0);//첫번째 탭을 선택하도록 제어
+        tdeptno.setEditable(false);//부서번호 편집 못 하도록
+        tempno.setEditable(false);//사번 편집 못 하도록
+        thiredate.setEditable(false);//입사일도 수정 못 하게
+        
+        //부서정보 가져오기
+        ArrayList<DeptVO> arr=deptDao.allDept();
+        dnames= new String[arr.size()];
+        if(arr!=null&&arr.size()>0) {
+        	for(int i=0;i<arr.size();i++) {
+        		DeptVO dvo = arr.get(i);
+        		dnames[i]=dvo.getDeptno()+":"+dvo.getDname();
+        	}
+        }
+        comboModel = new DefaultComboBoxModel(dnames);
+        this.cdname.setModel(comboModel);
+        
+        handler = new MyMouseEventHandler(this);
+        tableDept.addMouseListener(handler);
+        tableEmp.addMouseListener(handler);;
     }
 
     /**
@@ -169,10 +197,6 @@ public class EmpManagerGui extends javax.swing.JFrame {
 
         tableDept.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null}
             },
             new String [] {
                 "부서번호", "부서명", "부서위치"
@@ -483,14 +507,49 @@ public class EmpManagerGui extends javax.swing.JFrame {
     	//그 결과값에 따른 메시지 처리(등록 성공 or 등록 실패)
     	String message =(res) ? "등록성공":"등록실패";
     	showMsg(message);
+    	if(res) {
+    		showAllDeptInfo();
+    	}
     }//GEN-LAST:event_btDaddActionPerformed
-
+    public void showAllDeptInfo(){
+    	ArrayList<DeptVO> dlist = deptDao.allDept();
+    	showDeptTable(dlist);
+    }
+    public void showDeptTable(ArrayList<DeptVO> dlist) {
+    	Object [][] data = new Object[dlist.size()][3];//2차원 배열 생성
+    	for(int i=0;i<data.length;i++) {
+    		DeptVO dept = dlist.get(i);
+    		data[i][0]=dept.getDeptno();
+    		data[i][1]=dept.getDname();
+    		data[i][2]=dept.getLoc();
+    	}
+    	//부서 테이블 모델
+    	dmodel = new DefaultTableModel(data,colHeader1);
+    	//뷰와 모델을 연결
+    	tableDept.setModel(dmodel);
+    }
     private void btDlistActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btDlistActionPerformed
-        // TODO add your handling code here:
+        // 부서정보 보기
+    	showAllDeptInfo();
     }//GEN-LAST:event_btDlistActionPerformed
 
     private void btDdelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btDdelActionPerformed
-        // TODO add your handling code here:
+    	String deptno = tdeptno.getText();
+    	if(deptno==null||deptno.trim().isEmpty()) {
+    		showMsg("삭제할 부서를 테이블에서 선택하세요");
+    		return;
+    	}
+    	//삭제의사를 확인
+    	int yn = JOptionPane.showConfirmDialog(this, deptno+"를 정말 삭제?","삭제확인",JOptionPane.YES_NO_OPTION);
+    	if(yn==JOptionPane.NO_OPTION) {
+    		return;
+    	}//deptDao의 삭제 처리 메소드 호출
+    	boolean sc = deptDao.deleteDept(deptno);
+    	//그 실행 결과 메시지 처리(삭제 성공)
+    	String message = (sc) ? "삭제성공" : "삭제실패";
+    	showMsg(message);
+    	//모든 부서정보 가져오기
+    	showAllDeptInfo();
     }//GEN-LAST:event_btDdelActionPerformed
 
     private void thiredateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_thiredateActionPerformed
@@ -502,11 +561,53 @@ public class EmpManagerGui extends javax.swing.JFrame {
     }//GEN-LAST:event_cdnameActionPerformed
 
     private void btEaddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEaddActionPerformed
-        // TODO add your handling code here:
+    	//1.이름 부서명 업무 급여 보너스 값 받아오기 
+    	String ename = this.tename.getText();
+    	String dinfo=this.cdname.getSelectedItem().toString();
+//    	setTitle(dinfo);
+    	String token[]=dinfo.split("\\:");
+    	int deptno=Integer.parseInt(token[0]);
+    	String dname=token[1];
+    	System.out.println(token[0]+" "+token[1]);
+    	String job = this.tjob.getText();
+    	int sal =Integer.parseInt(this.tsal.getText());
+    	int comm =(deptno==30) ? Integer.parseInt(this.tcomm.getText()):0;
+    	//2. 유효성 체크 (not null컬럼은 필히 체크)
+    	if(ename==null||dinfo==null||ename.trim().isEmpty()||dinfo.trim().isEmpty()) {
+    		showMsg("사원명과 부서선택은 필수 입력사항입니다.");
+    		tename.requestFocus();
+    		return;
+    	}
+    	//3. 받아온 값으로 EmpVO 객체 생성
+    	EmpVO emp = new EmpVO(0,ename,job,0,null,sal,comm,deptno,dname);
+    	//4. empDao의 insertEmp()호출
+    	boolean result = empDao.insertEmp(emp);
+    	//5. 그 실행 결과 메시지 처리
+    	String message = (result) ? "사원 정보 등록 성공" : "등록 실패";
+    	showMsg(message);
+    	showAllEmpInfo();
     }//GEN-LAST:event_btEaddActionPerformed
-
+    public void showAllEmpInfo() {
+    	ArrayList<EmpVO> elist = empDao.selectEmpAll();
+    	showEmpTable(elist);
+    }
+    public void showEmpTable(ArrayList<EmpVO> elist) {
+    	Object [][] data = new Object[elist.size()][6];//2차원 배열 생성
+    	for(int i=0;i<data.length;i++) {
+    		EmpVO emp = elist.get(i);
+			data[i][0]=emp.getEmpno();
+    		data[i][1]=emp.getEname();
+    		data[i][2]=emp.getDeptno();
+    		data[i][3]=emp.getDname();
+    		data[i][4]=emp.getJob();
+    		data[i][5]=emp.getHiredate();	
+    		
+    	}
+    	emodel = new DefaultTableModel(data,colHeader2);
+    	tableEmp.setModel(emodel);
+    }
     private void btElistActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btElistActionPerformed
-        // TODO add your handling code here:
+    	showAllEmpInfo();
     }//GEN-LAST:event_btElistActionPerformed
 
     private void btEeditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEeditActionPerformed
@@ -586,16 +687,16 @@ public class EmpManagerGui extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane tabPane;
-    private javax.swing.JTable tableDept;
-    private javax.swing.JTable tableEmp;
-    private javax.swing.JTextField tcomm;
-    private javax.swing.JTextField tdeptno;
-    private javax.swing.JTextField tdname;
-    private javax.swing.JTextField tempno;
-    private javax.swing.JTextField tename;
-    private javax.swing.JTextField thiredate;
-    private javax.swing.JTextField tjob;
-    private javax.swing.JTextField tloc;
-    private javax.swing.JTextField tsal;
+     		javax.swing.JTable tableDept;
+     		javax.swing.JTable tableEmp;
+     		javax.swing.JTextField tcomm;
+     		javax.swing.JTextField tdeptno;
+     		javax.swing.JTextField tdname;
+     		javax.swing.JTextField tempno;
+     		javax.swing.JTextField tename;
+     		javax.swing.JTextField thiredate;
+     		javax.swing.JTextField tjob;
+     		javax.swing.JTextField tloc;
+     		javax.swing.JTextField tsal;
     // End of variables declaration//GEN-END:variables
 }

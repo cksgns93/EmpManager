@@ -9,6 +9,8 @@ public class EmpDAO {
 	private Connection con;
 	private PreparedStatement ps;
 	private ResultSet rs;
+	/*사원들이 소속되어 있는 부서명과 부서번호 가져오기
+	 * */
 	
 	//사원 정보를 등록하는 메소드 - INSERT 문을 수행
 	public boolean insertEmp(EmpVO e){
@@ -37,7 +39,10 @@ public class EmpDAO {
 	public ArrayList<EmpVO> selectEmpAll(){
 		try {
 			con = DBUtil.getCon();
-			String sql ="SELECT * FROM EMP2 ORDER BY EMPNO ASC";
+			//String sql ="SELECT * FROM EMP2 ORDER BY EMPNO ASC";
+			String sql="select d.deptno , d.dname, empno, ename, job, mgr,sal,comm,hiredate\r\n" + 
+					"from emp2 e right outer join dept2 d \r\n" + 
+					"on e.deptno = d.deptno order by e.deptno asc";
 			ps=con.prepareStatement(sql);
 			rs=ps.executeQuery();
 			ArrayList<EmpVO> arr = makeList(rs);
@@ -93,7 +98,8 @@ public class EmpDAO {
 			int sal=rs.getInt("sal");
 			int comm=rs.getInt("comm");
 			int deptno=rs.getInt("deptno");
-			EmpVO emp=new EmpVO(empno,ename,job,mgr,hdate,sal,comm,deptno);
+			String dname=rs.getString("dname");
+			EmpVO emp=new EmpVO(empno,ename,job,mgr,hdate,sal,comm,deptno,dname);
 			arr.add(emp);
 		}
 		return arr;

@@ -12,15 +12,17 @@ public class EmpVO
 	private int sal;
 	private int comm;
 	private int deptno;
+	private String dname;
+	
 	
 	public EmpVO() {
-		this(0,"����",null,0,null,0,0,0);
+		this(0,"",null,0,null,0,0,0,null);
 	}
 	public EmpVO(int empno, String ename, String job, int mgr,
-			Date hdate, int sal, int comm, int deptno) {
+			Date hdate, int sal, int comm, int deptno, String dname) {
 		this.setEmpno(empno); this.setEname(ename); this.setJob(job);
 		this.setMgr(mgr); setHiredate(hdate); this.setSal(sal);
-		this.setComm(comm); this.setDeptno(deptno);
+		this.setComm(comm); this.setDeptno(deptno); this.dname=dname;
 	}
 	public int getEmpno() {
 		return empno;
@@ -69,5 +71,11 @@ public class EmpVO
 	}
 	public void setDeptno(int deptno) {
 		this.deptno = deptno;
+	}
+	public String getDname() {
+		return dname;
+	}
+	public void setDname(String dname) {
+		this.dname = dname;
 	}
 }
