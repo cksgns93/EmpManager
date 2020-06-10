@@ -15,7 +15,7 @@ import javax.swing.table.DefaultTableModel;
 public class EmpManagerGui extends javax.swing.JFrame {
 	
 	private DeptDAO deptDao;
-	private EmpDAO empDao;
+			EmpDAO empDao;
 	private DefaultTableModel dmodel, emodel; //부서 테이블 모델, 사원 테이블 모델
 	String []colHeader1 = {"부서번호","부서명","부서위치"};
 	String []colHeader2 = {"사번","사원명","부서번호","부서명","담당업무","입사일"};
@@ -385,10 +385,10 @@ public class EmpManagerGui extends javax.swing.JFrame {
             }
         });
 
-        btEeditOk.setText("수정 처리");
+        btEeditOk.setText("찾기");
         btEeditOk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btEeditOkActionPerformed(evt);
+                btFindActionPerformed(evt);
             }
         });
 
@@ -611,15 +611,53 @@ public class EmpManagerGui extends javax.swing.JFrame {
     }//GEN-LAST:event_btElistActionPerformed
 
     private void btEeditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEeditActionPerformed
-        // TODO add your handling code here:
+    	//1.수정할 값들 가져오기
+    	String ename = this.tename.getText();
+    	String empno =this.tempno.getText();
+    	String dinfo=this.cdname.getSelectedItem().toString();
+//    	setTitle(dinfo);
+    	String token[]=dinfo.split("\\:");
+    	int deptno=Integer.parseInt(token[0]);
+    	String dname=token[1];
+    	String job = this.tjob.getText();
+    	int sal =Integer.parseInt(this.tsal.getText());
+    	int comm =(deptno==30) ? Integer.parseInt(this.tcomm.getText()):0;
+    	//2. 유효성 체크 (not null컬럼은 필히 체크)
+    	if(empno==null||ename==null||dinfo==null||ename.trim().isEmpty()||dinfo.trim().isEmpty()) {
+    		showMsg("사원명과 부서선택은 필수 입력사항입니다.");
+    		tename.requestFocus();
+    		return;
+    	}
+    	int empno2 = Integer.parseInt(empno);
+    	//3. 받아온 값으로 EmpVO 객체 생성
+    	EmpVO emp = new EmpVO(empno2,ename,job,0,null,sal,comm,deptno,dname);
+    	boolean b =empDao.updateEmp(emp);
+    	String bb = (b)? "성공":"실패";
+    	showAllEmpInfo();
+    	showMsg(bb);
+    	
     }//GEN-LAST:event_btEeditActionPerformed
 
-    private void btEeditOkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEeditOkActionPerformed
-        // TODO add your handling code here:
+    private void btFindActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEeditOkActionPerformed
+    	String fname=JOptionPane.showInputDialog("검색할 사원의 이름을 입력");
+    	if(fname==null) return;
+    	ArrayList<EmpVO> arr=empDao.findEmp(fname);
+    	if(arr!=null&&arr.size()>0) {
+    		this.showEmpTable(arr);
+    	}else {
+    		showMsg("검색 정보가 없습니다.");
+    	}
     }//GEN-LAST:event_btEeditOkActionPerformed
 
     private void btEdelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btEdelActionPerformed
-        // TODO add your handling code here:
+    	int c = JOptionPane.showConfirmDialog(btEdel, "진짜 삭제?");
+    	if(c==JOptionPane.YES_OPTION) {
+    		String empno = this.tempno.getText();
+        	boolean b = empDao.deleteEmp(empno);
+        	String res = (b) ? "성공" : "실패";
+        	showMsg(res);
+        	showAllEmpInfo();
+    	}
     }//GEN-LAST:event_btEdelActionPerformed
 
     /**
@@ -666,7 +704,7 @@ public class EmpManagerGui extends javax.swing.JFrame {
     private javax.swing.JButton btEedit;
     private javax.swing.JButton btEeditOk;
     private javax.swing.JButton btElist;
-    private javax.swing.JComboBox cdname;
+    		javax.swing.JComboBox cdname;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -699,4 +737,14 @@ public class EmpManagerGui extends javax.swing.JFrame {
      		javax.swing.JTextField tloc;
      		javax.swing.JTextField tsal;
     // End of variables declaration//GEN-END:variables
+
+			public void clearEmpT() {
+				this.tempno.setText("");				
+				this.tename.setText("");				
+				this.thiredate.setText("");				
+				this.tjob.setText("");				
+				this.tcomm.setText("");				
+				this.tsal.setText("");				
+				this.cdname.setSelectedIndex(0);				
+			}
 }

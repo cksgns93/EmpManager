@@ -39,14 +39,23 @@ public class MyMouseEventHandler extends MouseAdapter{
 	private void getSelectedEmpData(int row) {
 		if(row>=0) {
 			String empno = gui.tableEmp.getValueAt(row, 0).toString();
-			String ename = gui.tableEmp.getValueAt(row, 1).toString();
-			String job = gui.tableEmp.getValueAt(row, 4).toString();
-			String hiredate = gui.tableEmp.getValueAt(row, 5).toString();
-			
 			gui.tempno.setText(empno);
-			gui.tename.setText(ename);
-			gui.tjob.setText(job);
-			gui.thiredate.setText(hiredate);
+			System.out.println(empno);
+			EmpVO emp=gui.empDao.selectByEmpno(empno);
+			if(emp!=null) {
+				gui.tename.setText(emp.getEname());
+				gui.tjob.setText(emp.getJob());
+				gui.thiredate.setText(emp.getHiredate().toString());
+				gui.tdeptno.setText(emp.getDname());
+				//부서정보는 combobox
+				String info =emp.getDeptno()+":"+emp.getDname();
+				gui.cdname.setSelectedItem(info);
+				gui.tsal.setText(String.valueOf(emp.getSal()));;
+				gui.tcomm.setText(String.valueOf(emp.getComm()));
+			}else {
+				gui.clearEmpT();
+				gui.showMsg("직원을 선택하세요");
+			}
 		}
 	}
 
